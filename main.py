@@ -16,6 +16,8 @@ catalog = init_catalog(bot, text)
 admin = admin_panel(bot, text, token)
 #Системные переменные
 wait_password = []
+admin_wait_add_description = []
+admin_wait_add_name = []
 
 #Функции
 @bot.message_handler(commands=['start'])
@@ -33,26 +35,31 @@ def start_message(message):
 
 @bot.message_handler(commands=["admin"])
 def admin_start(message):
-    wait_password.append(message.chat.id)
+    if not(admin.check_on_admin(message.chat.id)):
+        wait_password.append(message.chat.id)
     admin.get_password_admin(message)
 
 
 @bot.message_handler(content_types="text")
 def catalog_start(message):
-
     if message.chat.id in wait_password and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
         wait_password.remove(message.chat.id)
         if message.text==token:
             admin.add_to_admin(message)
-            admin.main_admin_menu(message)
+            admin.main_admin_menu(message, back=False)
         else:
             bot.send_message(chat_id=message.chat.id, text="<b>Пароль неверный</b>", parse_mode="HTML")
     elif message.text=="Каталог":
         catalog.start(message=message, back=False)
+    
+    if message.chat.id in admin_wait_add_name and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
+        admin_wait_add_name.remove(message.chat.id)
+        admin_wait_add_description.append(message.chat.id)
+        admin.admin_apartment.add_apartment_5(message, back=False)
         
-    # mb_1 = KeyboardButton(text="Каталог")
-    # mb_2 = KeyboardButton(text="Ссылка на блог")
-    # mb_3 = KeyboardButton(text="Ссылка на специалиста")
+    if message.chat.id in admin_wait_add_description and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
+        admin_wait_add_description.remove(message.chat.id)
+        admin.admin_apartment.add_apartment_6(message)
     if message.text=="Ссылка на блог":
         bot.send_message(chat_id=message.chat.id,
                          text="<b>"+text["blog_info"]+"</b>",
@@ -90,9 +97,24 @@ def check_callback_data(callback):
         catalog.select_sum(callback)
 
     # TODO callback Панели администратора
-    elif callback.data == "add-apartment":
+    #* callback-и для добавления апартаментов
+    elif callback.data in ["add-apartment", "admin-add-back-to-1"]:
         admin.admin_apartment.add_apartment_start(callback)
     
+    elif callback.data in ["admin-add-back-to-2","admin-add-apartment", "admin-add-house", "admin-add-comm_apartment"]:
+        admin.admin_apartment.add_apartment_2(callback=callback)
+
+    elif callback.data in ["admin-add-back-to-3","admin-add-in_the_mountains", "admin-add-by_the_sea"]:
+        admin.admin_apartment.add_apartment_3(callback=callback)
+    
+    elif callback.data in ["admin-add-back-to-4", "admin-add-sum-1", "admin-add-sum-2", "admin-add-sum-3", "admin-add-sum-4"]:
+        admin.admin_apartment.add_apartment_4(callback=callback)
+        admin_wait_add_name.append(callback.message.chat.id)
+    elif callback.data == "admin-add-back-to-5":
+        admin_wait_add_name.remove(callback.message.chat.id)
+        admin_wait_add_description.append(callback.message.chat.id)
+        admin.admin_apartment.add_apartment_5(callback, back=True)
+
     elif callback.data == "edit-apartment":
         admin.admin_apartment.edit_apartment_start(callback)
     
@@ -107,6 +129,10 @@ def check_callback_data(callback):
     
     elif callback.data == "delete-user-info":
         admin.admin_user.delete_user_start(callback)
+
+    elif callback.data == "admin-back-to-main":
+        admin.main_admin_menu(message=callback, back=True)
+
 
 
 @bot.message_handler(commands=["help"])

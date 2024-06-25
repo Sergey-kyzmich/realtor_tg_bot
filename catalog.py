@@ -41,15 +41,15 @@ class init_catalog():
         kb.add(b1,b2)
         kb.add(b3)
         # if (back): callback->message else: message->message
-        if back: self.msg[message.message.chat.id] = self.bot.edit_message_text(chat_id=message.message.chat.id, 
-                                                                                message_id=self.msg[message.message.chat.id].message_id, 
-                                                                                text = "<b>"+self.text["catalog-1"]+"</b>", 
-                                                                                reply_markup=kb, 
-                                                                                parse_mode="HTML")
-        else: self.msg[message.chat.id] = self.bot.send_message(message.chat.id, 
-                                                                text="<b>"+self.text["catalog-1"]+"</b>", 
-                                                                reply_markup=kb, 
-                                                                parse_mode="HTML")
+        if back: self.bot.edit_message_text(chat_id=message.message.chat.id, 
+                                            message_id=message.message.message_id, 
+                                            text = "<b>"+self.text["catalog-1"]+"</b>", 
+                                            reply_markup=kb, 
+                                            parse_mode="HTML")
+        else: self.bot.send_message(message.chat.id, 
+                                    text="<b>"+self.text["catalog-1"]+"</b>", 
+                                    reply_markup=kb, 
+                                    parse_mode="HTML")
 
 
     def select_location(self, callback):
@@ -60,11 +60,11 @@ class init_catalog():
         b3 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"back-to-catalog-1")
         kb.add(b1,b2)
         kb.add(b3)
-        self.msg[callback.message.chat.id] = self.bot.edit_message_text(chat_id = callback.message.chat.id, 
-                                                                        message_id=self.msg[callback.message.chat.id].message_id, 
-                                                                        text="<b>"+self.text["catalog-2"]+"</b>", 
-                                                                        reply_markup=kb, 
-                                                                        parse_mode="HTML")
+        self.bot.edit_message_text(chat_id = callback.message.chat.id, 
+                                    message_id=callback.message.message_id, 
+                                    text="<b>"+self.text["catalog-2"]+"</b>", 
+                                    reply_markup=kb, 
+                                    parse_mode="HTML")
 
     
     def select_sum(self, callback):
@@ -89,11 +89,11 @@ class init_catalog():
             kb.add(b3,b4)
         b5 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"back-to-catalog-2")
         kb.add(b5)
-        self.msg[callback.message.chat.id] = self.bot.edit_message_text(chat_id = callback.message.chat.id, 
-                                                                        message_id=self.msg[callback.message.chat.id].message_id, 
-                                                                        text="<b>"+self.text["catalog-2"]+"</b>", 
-                                                                        reply_markup=kb, 
-                                                                        parse_mode="HTML")
+        self.bot.edit_message_text(chat_id = callback.message.chat.id, 
+                                    message_id=callback.message.message_id, 
+                                    text="<b>"+self.text["catalog-2"]+"</b>", 
+                                    reply_markup=kb, 
+                                    parse_mode="HTML")
 
     
 
@@ -104,8 +104,8 @@ class init_catalog():
         b2 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"back-to-past-image" if self.list_show[callback.message.chat.id]!=[] else "back-to-catalog-3")
         kb.add(b1)
         kb.add(b2)
-        self.msg[callback.message.chat.id] = self.bot.edit_message_text(chat_id = callback.message.chat.id, 
-                                                                        message_id=self.msg[callback.message.chat.id].message_id, 
-                                                                        text="<b>"+self.text["catalog-2"]+"</b>", 
-                                                                        reply_markup=kb, 
-                                                                        parse_mode="HTML")
+        self.bot.edit_message_text(chat_id = callback.message.chat.id, 
+                                    message_id=callback.message.message_id, 
+                                    text="<b>"+self.text["catalog-2"]+"</b>", 
+                                    reply_markup=kb, 
+                                    parse_mode="HTML")
