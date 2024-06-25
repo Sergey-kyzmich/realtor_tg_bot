@@ -1,6 +1,6 @@
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
-
+from database import database
 
 class init_catalog():
     def __init__(self, bot, text) -> None:
@@ -13,8 +13,10 @@ class init_catalog():
             # "sum": ""#квартиры/дома-1,2,3,4, коммерческое-1,2,3
         # }}
         self.list_show = {}#{"chat.id":[]}
+        db = database()
+        db.create_db()
 
-    
+
     def delete_list_show(self, callback): self.list_show[callback.message.chat.id] = self.list_show[callback.message.chat.id][:-1]
     def add_to_list_show(self, callback, item): 
         if self.list_show[callback.message.chat.id]:
