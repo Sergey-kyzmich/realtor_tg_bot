@@ -18,10 +18,17 @@ admin = admin_panel(bot, text, token)
 wait_password = []
 admin_wait_add_description = []
 admin_wait_add_name = []
+admin_wait_add_photo = []
 
+admin_edit_wait_name = []
+admin_edit_wait_description = []
+admin_edit_wait_photo = []
 #Функции
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    #проверка на наличие пользователя в базе данных
+    admin.check_user(message)
+
     main_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
     mb_1 = KeyboardButton(text="Каталог")
     mb_2 = KeyboardButton(text="Ссылка на блог")
@@ -39,28 +46,53 @@ def admin_start(message):
         wait_password.append(message.chat.id)
     admin.get_password_admin(message)
 
+#!Обработчик фотографий
+@bot.message_handler(content_types=["document"])
+def photo_message_handler(message):
+    if message.chat.id in admin_wait_add_photo:
+        admin.admin_apartment.add_to_photo_list(message, key="to-add")
+    
+    elif message.chat.id in admin_edit_wait_photo:
+        admin.admin_apartment.add_to_photo_list(message, key="to-edit")
 
+#! Обработчик текстовых сообщений
 @bot.message_handler(content_types="text")
-def catalog_start(message):
+def text_message_handler(message):
     if message.chat.id in wait_password and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
-        wait_password.remove(message.chat.id)
+        if message.chat.id in wait_password:
+            wait_password.remove(message.chat.id)
         if message.text==token:
             admin.add_to_admin(message)
             admin.main_admin_menu(message, back=False)
         else:
             bot.send_message(chat_id=message.chat.id, text="<b>Пароль неверный</b>", parse_mode="HTML")
+    
+    elif message.chat.id in admin_wait_add_name and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
+        if message.chat.id in admin_wait_add_name: 
+            admin_wait_add_name.remove(message.chat.id)
+        if message.chat.id not in admin_wait_add_description:
+            admin_wait_add_description.append(message.chat.id)
+        admin.admin_apartment.add_apartment_5(message, back=False)
+        
+    elif message.chat.id in admin_wait_add_description and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
+        if message.chat.id in admin_wait_add_description: 
+            admin_wait_add_description.remove(message.chat.id)
+        if message.chat.id not in admin_wait_add_photo:
+            admin_wait_add_photo.append(message.chat.id)
+        admin.admin_apartment.add_apartment_6(message)
+    
+    elif message.chat.id in admin_edit_wait_name and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
+        admin_edit_wait_name.remove(message.chat.id)
+        admin.admin_apartment.edit_apartment_4(message, key="name")
+
+    elif message.chat.id in admin_edit_wait_description and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
+        admin_edit_wait_description.remove(message.chat.id)
+        admin.admin_apartment.edit_apartment_4(message, key="description")
+
     elif message.text=="Каталог":
         catalog.start(message=message, back=False)
     
-    if message.chat.id in admin_wait_add_name and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
-        admin_wait_add_name.remove(message.chat.id)
-        admin_wait_add_description.append(message.chat.id)
-        admin.admin_apartment.add_apartment_5(message, back=False)
-        
-    if message.chat.id in admin_wait_add_description and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
-        admin_wait_add_description.remove(message.chat.id)
-        admin.admin_apartment.add_apartment_6(message)
-    if message.text=="Ссылка на блог":
+    elif message.text=="Ссылка на блог":
         bot.send_message(chat_id=message.chat.id,
                          text="<b>"+text["blog_info"]+"</b>",
                          parse_mode="HTML")
@@ -109,26 +141,71 @@ def check_callback_data(callback):
     
     elif callback.data in ["admin-add-back-to-4", "admin-add-sum-1", "admin-add-sum-2", "admin-add-sum-3", "admin-add-sum-4"]:
         admin.admin_apartment.add_apartment_4(callback=callback)
-        admin_wait_add_name.append(callback.message.chat.id)
+        if callback.message.chat.id not in admin_wait_add_name:
+            admin_wait_add_name.append(callback.message.chat.id)
     elif callback.data == "admin-add-back-to-5":
-        admin_wait_add_name.remove(callback.message.chat.id)
-        admin_wait_add_description.append(callback.message.chat.id)
+        if callback.message.chat.id in admin_wait_add_name:
+            admin_wait_add_name.remove(callback.message.chat.id)
+        if callback.message.chat.id not in admin_wait_add_description:
+            admin_wait_add_description.append(callback.message.chat.id)
         admin.admin_apartment.add_apartment_5(callback, back=True)
 
-    elif callback.data == "edit-apartment":
+    elif callback.data == "admin-add-load-photo-end":
+        if callback.message.chat.id in admin_wait_add_photo: 
+            admin_wait_add_photo.remove(callback.message.chat.id)
+        admin.admin_apartment.add_apartment_7(callback)
+
+
+    elif callback.data in ["edit-apartment-start", "admin-edit-back-to-1"]:
         admin.admin_apartment.edit_apartment_start(callback)
     
+    #изменение апартаментов 1-2
+    elif "edit-apartment-this-name-" in callback.data or callback.data=="admin-edit-back-to-2":
+        admin.admin_apartment.edit_apartment_2(callback=callback)
+
+    #изменение апартаментов 2-3
+    elif "edit-select-" in callback.data:
+        if callback.data.split("-")[-1]=="name":
+            admin_edit_wait_name.append(callback.message.chat.id)
+        elif callback.data.split("-")[-1]=="description":
+            admin_edit_wait_description.append(callback.message.chat.id)
+        elif callback.data.split("-")[-1]=="photo":
+            admin_edit_wait_photo.append(callback.message.chat.id)
+        admin.admin_apartment.edit_apartment_3(callback=callback)
+
+    elif "admin-edit-3-" in callback.data:
+        admin.admin_apartment.edit_apartment_4(callback, key=callback.data.replace("admin-edit-3", ""))
+
+    elif callback.data=="admin-edit-photo-load-end":
+        if callback.message.chat.id in admin_edit_wait_photo: 
+            admin_edit_wait_photo.remove(callback.message.chat.id)
+        admin.admin_apartment.edit_apartment_4(callback, key="photo")
+
+    # TODO Окончание callback для изменения
+
+    # TODO Начало callback для показа администратору
+    elif callback.data == "show-apartment":
+        admin.admin_apartment.show_apartment_start(callback)
+    
+    if "show-apartment-this-name-" in callback.data:
+        admin.admin_apartment.show_apartment_2(callback)
     elif callback.data == "delete-apartment": 
         admin.admin_apartment.delete_apartment_start(callback)
 
     elif callback.data == "get-user-list":
         admin.admin_user.get_list_user_start(callback)
     
-    elif callback.data == "edit-user-info":
-        admin.admin_user.edit_user_start(callback)
-    
+    # TODO callback для удаления карточек апартаментов
     elif callback.data == "delete-user-info":
         admin.admin_user.delete_user_start(callback)
+
+    elif "delete-apartment-this-name-" in callback.data:
+        admin.admin_apartment.delete_apartment_2(callback=callback)
+
+    # TODO callback для удаления пользователя
+    elif "delete-user-this-name-" in callback.data:
+        admin.admin_user.delete_user_2(callback)
+
 
     elif callback.data == "admin-back-to-main":
         admin.main_admin_menu(message=callback, back=True)

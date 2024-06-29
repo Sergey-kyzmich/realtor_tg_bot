@@ -1,18 +1,28 @@
 import sqlite3
-
+import json
 
 class database():
     def __init__(self) -> None:
         pass
 
 
-    def add_photo(self, data):
+    def add_apartment(self, data):
         db = sqlite3.connect("database.db")
         cursor = db.cursor()#number type location sum description photo
-        id = len(list(cursor.execute("SELECT number from apartment")))+1
-        cursor.execute((f'INSERT INTO apartment  VALUES ("{id}", "{data["number"]}", "{data["type"]}", "{data["location"]}", "{data["sum"]}", "{data["description"]}", "{data["photo"]}")'))
+        data["photo"] = json.dumps(data["photo"])
+        id = len(list(cursor.execute("SELECT name from apartment")))+1
+        cursor.execute(f'INSERT INTO apartment  VALUES (?, ?, ?, ?, ?, ?)', 
+                        (data["name"], data["type"], data["location"], data["sum"], data["description"],data["photo"]))
         db.commit()
         db.close()
+
+    def add_user(self, user):
+        db = sqlite3.connect("database.db")
+        cursor = db.cursor()
+        cursor.execute(f'INSERT INTO user VALUES (?,?,?,?)', (user["id"], "", user["name"], user["last_use"]))
+        db.commit()
+        db.close()
+
 
     def add_admin(self, data):
         db = sqlite3.connect("database.db")
@@ -26,13 +36,13 @@ class database():
         db = sqlite3.connect("database.db")
         cursor = db.cursor()
         cursor.execute(f'''
-        CREATE TABLE IF NOT EXISTS apartments (
-        number STRING PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS apartment (
+        name STRING PRIMARY KEY,
         type STRING,
         location STRING,
         sum STRING,
         description STRING,
-        photo STRING[]
+        photo TEXT
         )
         ''')
         db.commit()
@@ -40,9 +50,8 @@ class database():
         cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS user (
         id STRING PRIMARY KEY,
-        phone STRING[],
+        phone STRING,
         name STRING,
-        list_show STRING[],
         last_use DATE
         )
         ''')
@@ -68,16 +77,26 @@ class database():
         cursor = db.cursor()
         # data -> {"name": value}
         for item in data:
-            cursor.execute(f'''UPDATE {name} SET {item} = "{data[item]}" WHERE id = {id}''')
+            cursor.execute(f'''UPDATE {name} SET {item} = '{data[item]}' WHERE {"id" if name!="apartment" else "name"} = "{id}"''')
             db.commit()
         db.close()
     
+    def get_all(self, name):
+        db = sqlite3.connect("database.db")
+        cursor = db.cursor()
+        res = cursor.execute(f"SELECT * FROM {name}")
+        a = []
+        for item in res:
+            a.append(item)
+        return a
 
     def get_line(self, id, name):
         db = sqlite3.connect('database.db')
         cursor = db.cursor()
-        res = cursor.execute(f"SELECT * FROM {name} WHERE {'id' if name=='user' else 'number'} = {id}")
+        res = cursor.execute(f"SELECT * FROM {name} WHERE {'name' if name=='apartment' else 'id'} = {id}")
         for i in res:
+            if name == "apartment":
+                i[-1]=json.loads(i[-1])
             db.close()
             return i
         
@@ -95,17 +114,12 @@ class database():
     def len_db(self, name):
         db = sqlite3.connect('database.db')
         cursor = db.cursor()
-        a = len(list(cursor.execute(f"SELECT {'id' if name=='user' else 'number'} from {name}")))
+        a = len(list(cursor.execute(f"SELECT {'name' if name=='apartment' else 'id'} from {name}")))
         db.close()
         return a
     
     def delete(self, id, name):
         db = sqlite3.connect('database.db')
         cursor = db.cursor()
-        cursor.execute(f"DELETE FROM {name} WHERE {'id' if name=='user' else 'number'} = {id}");db.commit()
-        len_d = int(database().len_db())
-        id = int(id)
-        if name=="apartment":
-            for id in range(id, len_d+1):
-                cursor.execute(f'''UPDATE {name} SET number = "{id}" WHERE number = {id+1}''');db.commit()
-            db.close()
+        cursor.execute(f'DELETE FROM {name} WHERE {"name" if name=="apartment" else "id"} = "{id}"');db.commit()
+        db.close()
