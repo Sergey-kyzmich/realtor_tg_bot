@@ -1,15 +1,11 @@
-import json
-import random
-import time
-import datetime
-
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
-import requests
+import threading
 from text import text
 from catalog import init_catalog
 from tk import token
 from admin import admin_panel
+from check_last_use import check_last_use
 #Константы
 bot=telebot.TeleBot(token)
 catalog = init_catalog(bot, text)
@@ -23,11 +19,16 @@ admin_wait_add_photo = []
 admin_edit_wait_name = []
 admin_edit_wait_description = []
 admin_edit_wait_photo = []
+
+#Создание потока
+thread = threading.Thread(target=check_last_use,args=(bot,), daemon=True)
+thread.start()
+
 #Функции
 @bot.message_handler(commands=['start'])
 def start_message(message):
     #проверка на наличие пользователя в базе данных
-    admin.check_user(message)
+    admin.check_user(chat_id=message.chat.id, username=message.from_user.username)
 
     main_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
     mb_1 = KeyboardButton(text="Каталог")
@@ -49,6 +50,7 @@ def admin_start(message):
 #!Обработчик фотографий
 @bot.message_handler(content_types=["document"])
 def photo_message_handler(message):
+    admin.check_user(chat_id=message.chat.id, username=message.from_user.username)
     if message.chat.id in admin_wait_add_photo:
         admin.admin_apartment.add_to_photo_list(message, key="to-add")
     
@@ -58,6 +60,7 @@ def photo_message_handler(message):
 #! Обработчик текстовых сообщений
 @bot.message_handler(content_types="text")
 def text_message_handler(message):
+    admin.check_user(chat_id=message.chat.id, username=message.from_user.username)
     if message.chat.id in wait_password and message.chat.id not in ["Каталог", "Ссылка на блог", "Ссылка на специалиста"]:
         if message.chat.id in wait_password:
             wait_password.remove(message.chat.id)
@@ -96,11 +99,17 @@ def text_message_handler(message):
         bot.send_message(chat_id=message.chat.id,
                          text="<b>"+text["blog_info"]+"</b>",
                          parse_mode="HTML")
+    
+    elif message.text=="Ссылка на специалиста":
+        bot.send_message(chat_id=message.chat.id,
+                         text="<b>"+text["specialist_info"]+"</b>",
+                         parse_mode="HTML")
 
 
 #! ---CALLBACK---
 @bot.callback_query_handler(func=lambda  callback: callback.data)
 def check_callback_data(callback):
+    admin.check_user(chat_id=callback.message.chat.id, username=callback.from_user.username)
 
     #* callback при выборе типа жилья в каталоге
     if callback.data in ["apartment", "house", "comm_apartment"]:
@@ -115,7 +124,18 @@ def check_callback_data(callback):
     #* callback при выборе суммы жилья в каталоге
     elif callback.data in ["sum-1", "sum-2", "sum-3", "sum-4"]:
         catalog.edit(callback=callback, edit={"sum": callback.data[-1]})
+        catalog.show_apartment(callback)
+    elif callback.data in ["back-to-past-image", "next-image"]:
+        catalog.show_apartment(callback)
 
+    elif "select-apartment-this-name-" in callback.data:
+        catalog.select_apartment(callback)
+
+    elif callback.data == "send_select_apartment":
+        catalog.send_select_apartment(callback)
+
+    elif callback.data=="delete_select_apartment_menu":
+        bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)    
     #* Возвращение к 1-й странице каталога
     elif callback.data == "back-to-catalog-1":
         catalog.start(message=callback, back=True)
@@ -214,6 +234,7 @@ def check_callback_data(callback):
 
 @bot.message_handler(commands=["help"])
 def help(message):
+    admin.check_user(chat_id=message.chat.id, username=message.from_user.username)
     bot.send_message(message.chat.id, 
                      text="<b>"+text["help"]+f"{'<br>/admin-панель администратора' if admin.check_on_admin(message.chat.id) else ''}"+"</b>", 
                      parse_mode="HTML")

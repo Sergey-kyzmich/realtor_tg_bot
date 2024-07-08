@@ -1,3 +1,4 @@
+
 import sqlite3
 import json
 
@@ -19,7 +20,7 @@ class database():
     def add_user(self, user):
         db = sqlite3.connect("database.db")
         cursor = db.cursor()
-        cursor.execute(f'INSERT INTO user VALUES (?,?,?,?)', (user["id"], "", user["name"], user["last_use"]))
+        cursor.execute(f'INSERT INTO user VALUES (?,?,?,?)', (user["id"], user["name"], user["last_use"], user["last_reminder"]))
         db.commit()
         db.close()
 
@@ -50,9 +51,9 @@ class database():
         cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS user (
         id STRING PRIMARY KEY,
-        phone STRING,
         name STRING,
-        last_use DATE
+        last_use DATE,
+        last_reminder DATE
         )
         ''')
 
@@ -93,11 +94,10 @@ class database():
     def get_line(self, id, name):
         db = sqlite3.connect('database.db')
         cursor = db.cursor()
-        res = cursor.execute(f"SELECT * FROM {name} WHERE {'name' if name=='apartment' else 'id'} = {id}")
+        res = cursor.execute(f'SELECT * FROM {name} WHERE {"name" if name=="apartment" else "id"} = "{id}"')
         for i in res:
-            if name == "apartment":
-                i[-1]=json.loads(i[-1])
             db.close()
+            print(f"{i=}")
             return i
         
     def get_column(self, name, column):

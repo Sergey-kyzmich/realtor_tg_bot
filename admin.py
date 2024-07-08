@@ -16,17 +16,16 @@ class admin_panel():
         self.admin_user = admin_user(bot, text)
 
 
-    def check_user(self, message):
-        names=[]
-        for item in self.db.get_all("user"):
-            if message.chat.id == item[0]:
-                return self.db.edit(name="user", id=message.chat.id, data={"last_use":datetime.datetime.now()})
+    def check_user(self, chat_id, username):
+        for item in self.db.get_all(name="user"):
+            if chat_id == item[0]:
+                return self.db.edit(name="user", id=chat_id, data={"last_use":datetime.datetime.now()})
         #Не нашлось такого элемента
         self.db.add_user(user={
-            "id":message.chat.id,
-            "phone":"",
-            "name":message.from_user.username,
-            "last_use":datetime.datetime.now()})
+            "id":chat_id,
+            "name":username,
+            "last_use":datetime.datetime.now(),
+            "last_reminder":datetime.datetime.now()})
             
 
 
@@ -426,7 +425,7 @@ class admin_apartment():
         
         self.bot.edit_message_text(chat_id = callback.message.chat.id,
                                    message_id = callback.message.message_id,
-                                   text = "<b>"+text+"</b>",
+                                   text = f"<b> Выбрана карточка под именем: <em>{self.select_name[callback.message.chat.id]}</em>\n"+text+"</b>",
                                    reply_markup=kb,
                                    parse_mode="HTML")
     
@@ -487,7 +486,7 @@ class admin_apartment():
 
         self.apartments[callback.message.chat.id] = {}
         kb = InlineKeyboardMarkup()
-        for item in database.get_all("None", name="apartment"):
+        for item in database().get_all(name="apartment"):
             self.apartments[callback.message.chat.id][item[0]] = {
                 "name":item[0],
                 "type":item[1],
@@ -518,14 +517,14 @@ class admin_apartment():
         
     def show_apartment_2(self, callback):
         name = callback.data.replace("show-apartment-this-name-", "")
-        print(self.apartments[callback.message.chat.id])
+        # print(self.apartments[callback.message.chat.id])
         apartment = self.apartments[callback.message.chat.id][name]
 
         # Замена callback названий на Русские
         apartment["type"] = apartment["type"].replace("comm_apartment", "Коммерческая недвижимость").replace("apartment", "Квартира").replace("house", "Дом")
         apartment["location"] = apartment["location"].replace("by_the_sea", "У моря").replace("in_the_mountains", "В горах")
         if apartment["type"]=="Квартира":apartment["sum"]=apartment["sum"].replace("sum-1", "До 20 млн руб").replace("sum-2", "До 50 млн руб").replace("До 100 млн руб", "От 100 млн руб")
-        if apartment["type"]=="Дом":apartment["sum"]=apartment["sum"].replace("sum-1", "До 50 млн руб").replace("sum-2", "До 100 млн руб").replace("До 500 млн руб", "От 500 млн руб")
+        elif apartment["type"]=="Дом":apartment["sum"]=apartment["sum"].replace("sum-1", "До 50 млн руб").replace("sum-2", "До 100 млн руб").replace("До 500 млн руб", "От 500 млн руб")
         else:apartment["sum"]=apartment["sum"].replace("sum-1", "До 100 млн руб").replace("sum-2", "До 500 млн руб").replace("От 500 млн руб", "От 100 млн руб")
         
         
@@ -553,7 +552,7 @@ class admin_apartment():
     def delete_apartment_start(self, callback):
         kb = InlineKeyboardMarkup()
         self.delete_apartments[callback.message.chat.id] = {}
-        for item in database.get_all("None", name="apartment"):
+        for item in database().get_all(name="apartment"):
             self.delete_apartments[callback.message.chat.id][item[0]] = {
                 "name":item[0],
                 "type":item[1],
@@ -596,10 +595,9 @@ class admin_user():
             "delete-2":"Пользователь успешло удален!"
         }
     
-
     def get_list_user_start(self, callback):
         users={}
-        for item in self.db.get_all("user"):
+        for item in self.db.get_all(name="user"):
             users[str(item[0])] = {
                 "id":item[0],
                 "phone":item[1],
@@ -608,12 +606,12 @@ class admin_user():
             }
         text="Список пользователей:"
         for i in users:
+#Номер телефона: {'None' if users[i]['phone']=='' else users[i]['phone']}
             text+=f"""
 
-Имя:@{users[i]['name']}
-Номер телефона: {'None' if users[i]['phone']=='' else users[i]['phone']}
-Последний раз был в сети: {users[i]['last_use']}
-ID чата с пользователем: {users[i]['id']}"""
+Имя: @{users[i]['name']}
+Последний раз был в сети: {users[i]['last_use'][:users[i]['last_use'].index(".")]}
+ID чата между ботом и пользователем: {users[i]['id']}"""
             
         kb = InlineKeyboardMarkup()
         b = InlineKeyboardButton(text="⬅️Назад", callback_data="admin-back-to-main")
@@ -626,7 +624,7 @@ ID чата с пользователем: {users[i]['id']}"""
 
     def delete_user_start(self, callback):
         kb = InlineKeyboardMarkup()
-        for item in self.db.get_all("user"):
+        for item in self.db.get_all(name="user"):
             b = InlineKeyboardButton(text=item[2], callback_data=f"delete-user-this-name-{item[2]}")
             kb.add(b)
         b = InlineKeyboardButton(text="⬅️Назад", callback_data="admin-back-to-main")
@@ -640,7 +638,7 @@ ID чата с пользователем: {users[i]['id']}"""
         
     def delete_user_2(self, callback):
         name_user=callback.data.replace("delete-user-this-name-", "")
-        for item in self.db.get_all("user"):
+        for item in self.db.get_all(name="user"):
             if item[2]==name_user:
                 id_user=item[0]
         self.db.delete(id=id_user, name="user")
