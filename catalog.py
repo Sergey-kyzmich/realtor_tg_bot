@@ -59,8 +59,8 @@ class init_catalog():
         try:
             #* Создание клавиатуры
             kb = InlineKeyboardMarkup()
-            b2 = InlineKeyboardButton(text="⛰️В горах", callback_data=f"in_the_mountains")
-            b1 = InlineKeyboardButton(text="🏖️У моря", callback_data=f"by_the_sea")
+            b2 = InlineKeyboardButton(text="⛰️Красная поляна", callback_data=f"in_the_mountains")
+            b1 = InlineKeyboardButton(text="🏖️Побережье", callback_data=f"by_the_sea")
             b3 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"back-to-catalog-1")
             kb.add(b1,b2)
             kb.add(b3)
@@ -105,109 +105,110 @@ class init_catalog():
 
 
     def show_apartment(self, callback):
-        try:
-            if callback.message.chat.id not in self.count_show:
-                self.list_show[callback.message.chat.id]=[]
-                self.count_show[callback.message.chat.id]=0
-
-            for i in self.list_show[callback.message.chat.id]:
-                for msg in i:
-                    try:self.bot.delete_message(chat_id=callback.message.chat.id, message_id=msg.message_id)
-                    except:continue
+        # try:
+        if "sum-" in callback.data:
             self.list_show[callback.message.chat.id]=[]
+            self.count_show[callback.message.chat.id]=0
+        for i in self.list_show[callback.message.chat.id]:
+            for msg in i:
+                try:self.bot.delete_message(chat_id=callback.message.chat.id, message_id=msg.message_id)
+                except:continue
+        self.list_show[callback.message.chat.id]=[]
 
-            if "back" in callback.data:
-                self.count_show[callback.message.chat.id] -=1
-            else:
-                self.count_show[callback.message.chat.id] +=1
+        if "back" in callback.data:
+            self.count_show[callback.message.chat.id] -=1
+        else:
+            self.count_show[callback.message.chat.id] +=1
 
-            if self.count_show[callback.message.chat.id]==0:
-                self.select_sum(callback)
-            else:
-                    
-                apartments={}
-                for item in database().get_all(name="apartment"):
-                    apartments[item[0]] = {
-                        "name":item[0],
-                        "type":item[1],
-                        "location":item[2],
-                        "sum": item[3],
-                        "description":item[4],
-                        "photo":json.loads(item[5])
-                    }
-                true_apartment=[]
-                for item in apartments:
-                    if apartments[item]["type"]==self.select[callback.message.chat.id]["type"] and \
-                        apartments[item]["location"]==self.select[callback.message.chat.id]["location"] and \
-                        self.select[callback.message.chat.id]["sum"] in apartments[item]["sum"][-1]:
-                            apartments[item]["name"]=item
-                            true_apartment.append(apartments[item])
+        print(self.count_show[callback.message.chat.id])
+        if self.count_show[callback.message.chat.id]==0:
+            print("go-to-sum")
+            self.select_sum(callback)
+        else:
                 
+            apartments={}
+            for item in database().get_all(name="apartment"):
+                apartments[item[0]] = {
+                    "name":item[0],
+                    "type":item[1],
+                    "location":item[2],
+                    "sum": item[3],
+                    "description":item[4],
+                    "photo":json.loads(item[5])
+                }
+            true_apartment=[]
+            for item in apartments:
+                if apartments[item]["type"]==self.select[callback.message.chat.id]["type"] and \
+                    apartments[item]["location"]==self.select[callback.message.chat.id]["location"] and \
+                    self.select[callback.message.chat.id]["sum"] in apartments[item]["sum"][-1]:
+                        apartments[item]["name"]=item
+                        true_apartment.append(apartments[item])
+            
+            
+            if true_apartment!=[]:
+                apartment=true_apartment[self.count_show[callback.message.chat.id]-1]
+                # Замена callback названий на Русские
+                apartment["type"] = apartment["type"].replace("comm_apartment", "Коммерческая недвижимость").replace("apartment", "Квартира").replace("house", "Дом")
+                apartment["location"] = apartment["location"].replace("by_the_sea", "Побережье").replace("in_the_mountains", "Красная поляна")
+                if apartment["type"]=="Квартира":apartment["sum"]=apartment["sum"].replace("sum-1", "До 20 млн руб").replace("sum-2", "До 50 млн руб").replace("sum-3","До 100 млн руб").replace("sum-4", "От 100 млн руб")
+                if apartment["type"]=="Дом":apartment["sum"]=apartment["sum"].replace("sum-1", "До 50 млн руб").replace("sum-2", "До 100 млн руб").replace("sum-4","До 500 млн руб").replace("sum-4", "От 500 млн руб")
+                else:apartment["sum"]=apartment["sum"].replace("sum-1", "До 100 млн руб").replace("sum-2", "До 500 млн руб").replace("sum-3","От 500 млн руб")
                 
-                if true_apartment!=[]:
-                    apartment=true_apartment[self.count_show[callback.message.chat.id]-1]
-                    # Замена callback названий на Русские
-                    apartment["type"] = apartment["type"].replace("comm_apartment", "Коммерческая недвижимость").replace("apartment", "Квартира").replace("house", "Дом")
-                    apartment["location"] = apartment["location"].replace("by_the_sea", "У моря").replace("in_the_mountains", "В горах")
-                    if apartment["type"]=="Квартира":apartment["sum"]=apartment["sum"].replace("sum-1", "До 20 млн руб").replace("sum-2", "До 50 млн руб").replace("sum-3","До 100 млн руб").replace("sum-4", "От 100 млн руб")
-                    if apartment["type"]=="Дом":apartment["sum"]=apartment["sum"].replace("sum-1", "До 50 млн руб").replace("sum-2", "До 100 млн руб").replace("sum-4","До 500 млн руб").replace("sum-4", "От 500 млн руб")
-                    else:apartment["sum"]=apartment["sum"].replace("sum-1", "До 100 млн руб").replace("sum-2", "До 500 млн руб").replace("sum-3","От 500 млн руб")
-                    
-                    self.apartment_for_select[callback.message.chat.id]=apartment
+                self.apartment_for_select[callback.message.chat.id]=apartment
 
-                    text =f"""Тип: {apartment['type']}
+                text =f"""Тип: {apartment['type']}
 Расположение: {apartment['location']}
 Ценовая категория: {apartment['sum']}
 
 {apartment['description']}
 
-    """ 
-                else:
-                    apartment={
-                        "type":self.select[callback.message.chat.id]["type"],
-                        "location":self.select[callback.message.chat.id]["location"],
-                        "sum":self.select[callback.message.chat.id]["sum"]
-                    }
-                    apartment["type"] = apartment["type"].replace("comm_apartment", "Коммерческая недвижимость").replace("apartment", "Квартира").replace("house", "Дом")
-                    apartment["location"] = apartment["location"].replace("by_the_sea", "У моря").replace("in_the_mountains", "В горах")
-                    if apartment["type"]=="Квартира":apartment["sum"]=apartment["sum"].replace("1", "До 20 млн руб").replace("2", "До 50 млн руб").replace("3","До 100 млн руб").replace("4", "От 100 млн руб")
-                    elif apartment["type"]=="Дом":apartment["sum"]=apartment["sum"].replace("1", "До 50 млн руб").replace("2", "До 100 млн руб").replace("3","До 500 млн руб").replace("4", "От 500 млн руб")
-                    else:apartment["sum"]=apartment["sum"].replace("1", "До 100 млн руб").replace("2", "До 500 млн руб").replace("3", "От 500 млн руб")
-                                        
-                    text=f"""Не найдено апартаментов по данным характеристикам.
+""" 
+            else:
+                apartment={
+                    "type":self.select[callback.message.chat.id]["type"],
+                    "location":self.select[callback.message.chat.id]["location"],
+                    "sum":self.select[callback.message.chat.id]["sum"]
+                }
+                apartment["type"] = apartment["type"].replace("comm_apartment", "Коммерческая недвижимость").replace("apartment", "Квартира").replace("house", "Дом")
+                apartment["location"] = apartment["location"].replace("by_the_sea", "Побережье").replace("in_the_mountains", "Красная поляна")
+                if apartment["type"]=="Квартира":apartment["sum"]=apartment["sum"].replace("1", "До 20 млн руб").replace("2", "До 50 млн руб").replace("3","До 100 млн руб").replace("4", "От 100 млн руб")
+                elif apartment["type"]=="Дом":apartment["sum"]=apartment["sum"].replace("1", "До 50 млн руб").replace("2", "До 100 млн руб").replace("3","До 500 млн руб").replace("4", "От 500 млн руб")
+                else:apartment["sum"]=apartment["sum"].replace("1", "До 100 млн руб").replace("2", "До 500 млн руб").replace("3", "От 500 млн руб")
+                                    
+                text=f"""Не найдено апартаментов по данным характеристикам.
 Вы выбрали:
 Тип: {apartment["type"]}
 Расположение: {apartment["location"]}
 Ценовая категория: {apartment["sum"]}"""
-                    apartment["photo"]=[]
-                    apartment["name"]="error"
+                apartment["photo"]=[]
+                apartment["name"]="error"
 
-                kb = InlineKeyboardMarkup()
-                b1 = InlineKeyboardButton(text="Далее➡️", callback_data=f"next-image")
-                b2 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"back-to-past-image")
-                b3 = InlineKeyboardButton(text="✔️Выбрать", callback_data=f"select-apartment-this-name-{apartment['name']}")
-                if "Не найдено апартаментов по данным характеристикам." not in text:    
-                    if self.count_show[callback.message.chat.id]!=len(true_apartment):
-                        kb.add(b3)
-                        kb.add(b1)
-                        kb.add(b2)
-                    else:
-                        kb.add(b3)
-                        kb.add(b2)
-                else:
+            kb = InlineKeyboardMarkup()
+            b1 = InlineKeyboardButton(text="Далее➡️", callback_data=f"next-image")
+            b2 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"back-to-past-image")
+            b3 = InlineKeyboardButton(text="✔️Выбрать", callback_data=f"select-apartment-this-name-")
+            if "Не найдено апартаментов по данным характеристикам." not in text:    
+                if self.count_show[callback.message.chat.id]!=len(true_apartment):
+                    kb.add(b3)
+                    kb.add(b1)
                     kb.add(b2)
-                print(apartment["photo"])
-                if len(apartment['photo'])>=1:
-                    print("send photo")
-                    self.list_show[callback.message.chat.id].append(self.bot.send_media_group(chat_id=callback.message.chat.id, media=[telebot.types.InputMediaPhoto(open(dir, 'rb')) for dir in apartment['photo']]))
-                    print(self.list_show)
-                self.bot.edit_message_text(chat_id = callback.message.chat.id, 
-                                            message_id=callback.message.message_id, 
-                                            text="<b>"+text+"</b>", 
-                                            reply_markup=kb, 
-                                            parse_mode="HTML")
-        
-        except Exception as e: print("error in catalog/show_apartment:"+str(e))    
+                else:
+                    kb.add(b3)
+                    kb.add(b2)
+            else:
+                kb.add(b2)
+            print(kb)
+            if len(apartment['photo'])>=1:
+                print("send photo")
+                self.list_show[callback.message.chat.id].append(self.bot.send_media_group(chat_id=callback.message.chat.id, media=[telebot.types.InputMediaPhoto(open(dir, 'rb')) for dir in apartment['photo']]))
+                print(self.list_show)
+            self.bot.edit_message_text(chat_id = callback.message.chat.id, 
+                                        message_id=callback.message.message_id, 
+                                        text="<b>"+text+"</b>", 
+                                        reply_markup=kb, 
+                                        parse_mode="HTML")
+    
+        # except Exception as e: print("error in catalog/show_apartment:"+str(e))    
 
 
 

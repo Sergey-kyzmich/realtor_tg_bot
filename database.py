@@ -53,7 +53,7 @@ class database():
         id STRING PRIMARY KEY,
         name STRING,
         last_use DATE,
-        last_reminder DATE
+        last_reminder INTEGER
         )
         ''')
 

@@ -18,14 +18,15 @@ class admin_panel():
 
     def check_user(self, chat_id, username):
         for item in self.db.get_all(name="user"):
+            print(f"go edit last_use to {item}")
             if chat_id == item[0]:
-                return self.db.edit(name="user", id=chat_id, data={"last_use":datetime.datetime.now()})
+                return self.db.edit(name="user", id=chat_id, data={"last_use":datetime.datetime.now(), "last_reminder":0})
         #Не нашлось такого элемента
         self.db.add_user(user={
             "id":chat_id,
             "name":username,
             "last_use":datetime.datetime.now(),
-            "last_reminder":datetime.datetime.now()})
+            "last_reminder":0})
             
 
 
@@ -87,7 +88,7 @@ class admin_apartment():
             "add-start":"Выберите тип недвижимости:",
             "add-2":"Выберите расположение:",
             "add-3":"Выберите ценовой диапозон:",
-            "add-4":"Введите название (Должно содержать минимум одну букву):",
+            "add-4":"Введите название (максимум 20 символов):",
             "add-5":"Введите описание:",
             "add-6":"Отправьте фотографии(без сжатия/группировки):",
             "add-7-ok":"Отлично! Апартаменты добавлены.",
@@ -98,7 +99,7 @@ class admin_apartment():
             "edit-3-type": "Выберите тип недвижимости, на который желаете заменить👇",
             "edit-3-location":"Выберите расположение недвижимости, на которое желаете заменить👇",
             "edit-3-sum":"Выберите ценовой диапазон, на который желаете заменить👇",
-            "edit-3-name":"Введите новое название:",
+            "edit-3-name":"Введите новое название(максимум 20 символов):",
             "edit-3-description":"Введите новое описание:",
             "edit-3-photo":"Отправьте фотографии(без сжатия/группировки):",
             "edit-4-type":"Отлично! тип недвижимости обновлен.",
@@ -235,7 +236,7 @@ class admin_apartment():
 
 
     def add_apartment_5(self, message, back):
-        if not(back):self.select[message.chat.id]["name"]=message.text     
+        if not(back):self.select[message.chat.id]["name"]=message.text[:20]     
         kb = InlineKeyboardMarkup()
         b1 = InlineKeyboardButton(text="⬅️Назад", callback_data=f"admin-add-back-to-4")
         kb.add(b1) 
@@ -277,7 +278,7 @@ class admin_apartment():
         self.select[callback.message.chat.id]={"type":"","sum":"","location":"","name":"","description":"","photo":[]}
         
         self.bot.send_message(chat_id=callback.message.chat.id, 
-                              text="<b>"+self.text["add-7-ok" if self.select[callback.message.chat.id]["photo"]!=[] else "add-7-error"]+"</b>",
+                              text="<b>"+self.text["add-7-ok"]+"</b>",
                               parse_mode="HTML")
         
         #Изменение сообщения с ожиданием фотогграфий(чтобы кнопка не моргала)
@@ -442,9 +443,9 @@ class admin_apartment():
         elif key == "name":
             #  изменение дериктории
             old_name = os.getcwd().replace("\\", "/")+f"/database_photo/{self.select_name[callback.chat.id]}"
-            new_name = os.getcwd().replace("\\", "/")+f"/database_photo/{callback.text}"
+            new_name = os.getcwd().replace("\\", "/")+f"/database_photo/{callback.text[:20]}"
             os.rename(old_name, new_name)
-            self.select_name[callback.chat.id]=callback.text
+            self.select_name[callback.chat.id]=callback.text[:20]
 
             self.db.edit(name="apartment", id=self.select_name[callback.chat.id], data={"name":callback.text})
             text = self.text["edit-4-name"]
@@ -600,9 +601,8 @@ class admin_user():
         for item in self.db.get_all(name="user"):
             users[str(item[0])] = {
                 "id":item[0],
-                "phone":item[1],
-                "name":item[2],
-                "last_use":item[3]
+                "name":item[1],
+                "last_use":item[2]
             }
         text="Список пользователей:"
         for i in users:
@@ -625,7 +625,7 @@ ID чата между ботом и пользователем: {users[i]['id']
     def delete_user_start(self, callback):
         kb = InlineKeyboardMarkup()
         for item in self.db.get_all(name="user"):
-            b = InlineKeyboardButton(text=item[2], callback_data=f"delete-user-this-name-{item[2]}")
+            b = InlineKeyboardButton(text=item[1], callback_data=f"delete-user-this-name-{item[1]}")
             kb.add(b)
         b = InlineKeyboardButton(text="⬅️Назад", callback_data="admin-back-to-main")
         kb.add(b)
@@ -639,7 +639,7 @@ ID чата между ботом и пользователем: {users[i]['id']
     def delete_user_2(self, callback):
         name_user=callback.data.replace("delete-user-this-name-", "")
         for item in self.db.get_all(name="user"):
-            if item[2]==name_user:
+            if item[1]==name_user:
                 id_user=item[0]
         self.db.delete(id=id_user, name="user")
 

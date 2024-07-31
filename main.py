@@ -35,9 +35,14 @@ def start_message(message):
     mb_2 = KeyboardButton(text="Ссылка на блог")
     mb_3 = KeyboardButton(text="Ссылка на специалиста")
     main_kb.add(mb_1, mb_2, mb_3)
+    kb_catalog= InlineKeyboardMarkup()
+    bc=InlineKeyboardButton(text="НАЧАТЬ ПОИСК", callback_data="start_catalog")
+    kb_catalog.add(bc)
+    bot.send_photo(message.chat.id, photo=open('./database_photo/media/start.jpg', 'rb'),
+                     reply_markup=main_kb)
     bot.send_message(message.chat.id, 
-                     "<b>"+text["start"]+"</b>", 
-                     reply_markup=main_kb, 
+                     "<b>"+text["start"]+"</b>",
+                     reply_markup=kb_catalog,
                      parse_mode="HTML")
 
 
@@ -46,6 +51,15 @@ def admin_start(message):
     if not(admin.check_on_admin(message.chat.id)):
         wait_password.append(message.chat.id)
     admin.get_password_admin(message)
+
+
+@bot.message_handler(commands=["help"])
+def help(message):
+    print("help")
+    admin.check_user(chat_id=message.chat.id, username=message.from_user.username)
+    bot.send_message(message.chat.id, 
+                     text="<b>"+text["help"]+f"\n{'/admin-панель администратора' if admin.check_on_admin(message.chat.id) else ''}"+"</b>", 
+                     parse_mode="HTML")
 
 #!Обработчик фотографий
 @bot.message_handler(content_types=["document"])
@@ -110,9 +124,16 @@ def text_message_handler(message):
 @bot.callback_query_handler(func=lambda  callback: callback.data)
 def check_callback_data(callback):
     admin.check_user(chat_id=callback.message.chat.id, username=callback.from_user.username)
+    if callback.data=="connect_to_spec":
+        bot.send_message(chat_id=callback.message.chat.id,
+                         text="<b>"+text["specialist_info"]+"</b>",
+                         parse_mode="HTML")
+
+    elif callback.data == "start_catalog":
+        catalog.start(message=callback.message, back=False)
 
     #* callback при выборе типа жилья в каталоге
-    if callback.data in ["apartment", "house", "comm_apartment"]:
+    elif callback.data in ["apartment", "house", "comm_apartment"]:
         catalog.edit(callback,  {"type": callback.data})
         catalog.select_location(callback)
 
@@ -122,7 +143,7 @@ def check_callback_data(callback):
         catalog.select_sum(callback)
 
     #* callback при выборе суммы жилья в каталоге
-    elif callback.data in ["sum-1", "sum-2", "sum-3", "sum-4"]:
+    elif callback.data in ["sum-1", "sum-2", "sum-3", "4"]:
         catalog.edit(callback=callback, edit={"sum": callback.data[-1]})
         catalog.show_apartment(callback)
     elif callback.data in ["back-to-past-image", "next-image"]:
@@ -232,10 +253,4 @@ def check_callback_data(callback):
 
 
 
-@bot.message_handler(commands=["help"])
-def help(message):
-    admin.check_user(chat_id=message.chat.id, username=message.from_user.username)
-    bot.send_message(message.chat.id, 
-                     text="<b>"+text["help"]+f"{'<br>/admin-панель администратора' if admin.check_on_admin(message.chat.id) else ''}"+"</b>", 
-                     parse_mode="HTML")
 bot.infinity_polling()
