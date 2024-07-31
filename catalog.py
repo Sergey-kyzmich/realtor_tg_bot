@@ -1,7 +1,6 @@
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from database import database
-import random
 import json
 class init_catalog():
     def __init__(self, bot, text) -> None:
